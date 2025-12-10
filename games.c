@@ -6,30 +6,13 @@
 /* Uncomment the line below to enable DEBUG mode */
 /* #define DEBUG */
 
-/* ========== GAME 1: LUCKY NUMBER ========== */
+/* ========== GAME 1: СЧАСТЛИВЧИК (Угадай число) ========== */
 
 int start_lucky_game(Difficulty difficulty) {
-    int max_range;
-    int secret;
-    int guess;
+    int max_range, secret, guess;
 
-    /* Determine range based on difficulty */
-    switch (difficulty) {
-        case DIFF_EASY:
-            max_range = 10;
-            break;
-        case DIFF_MEDIUM:
-            max_range = 50;
-            break;
-        case DIFF_HARD:
-            max_range = 100;
-            break;
-        default:
-            max_range = 50;
-            break;
-    }
-
-    /* Generate secret number */
+    // выбираем диапазон по сложности
+    max_range = (difficulty == DIFF_EASY) ? 10 : (difficulty == DIFF_MEDIUM) ? 50 : 100;
     secret = (rand() % max_range) + 1;
 
     clear_screen();
@@ -45,17 +28,17 @@ int start_lucky_game(Difficulty difficulty) {
 
     if (guess == secret) {
         printf("\nПоздравляем! Вы угадали число %d!\n", secret);
-        return 1; /* Victory */
+        return 1; // победа
     } else {
         printf("\nНе угадали! Загаданное число было: %d\n", secret);
-        return 0; /* Defeat */
+        return 0; // поражение
     }
 }
 
-/* ========== GAME 2: FIND PAIRS ========== */
+/* ========== GAME 2: НАЙДИ ПАРЫ ========== */
 
-/* Helper function to allocate 2D character array */
-char** allocate_char_field(int rows, int cols) {
+// создаём двумерный массив символов
+char** create_field(int rows, int cols) {
     int i;
     char** field = (char**)malloc(rows * sizeof(char*));
     for (i = 0; i < rows; i++) {
@@ -64,8 +47,8 @@ char** allocate_char_field(int rows, int cols) {
     return field;
 }
 
-/* Helper function to free 2D character array */
-void free_char_field(char** field, int rows) {
+// освобождаем память двумерного массива
+void free_field(char** field, int rows) {
     int i;
     for (i = 0; i < rows; i++) {
         free(field[i]);
@@ -73,42 +56,41 @@ void free_char_field(char** field, int rows) {
     free(field);
 }
 
-/* Initialize pairs field with matching cards */
-void init_pairs_field(char** field, char** visible, int rows, int cols) {
+// заполняем поле парами и перемешиваем
+void init_pairs(char** field, char** visible, int rows, int cols) {
     int i, j;
-    int total_cells = rows * cols;
-    int pair_count = total_cells / 2;
-    char* cards = (char*)malloc(total_cells * sizeof(char));
+    int total = rows * cols;
+    char* cards = (char*)malloc(total * sizeof(char));
     int idx = 0;
 
-    /* Create pairs */
-    for (i = 0; i < pair_count; i++) {
+    // создаём пары карт (A A, B B, C C...)
+    for (i = 0; i < total / 2; i++) {
         cards[idx++] = 'A' + (i % 26);
         cards[idx++] = 'A' + (i % 26);
     }
 
-    /* Shuffle cards */
-    for (i = total_cells - 1; i > 0; i--) {
+    // перемешиваем карты
+    for (i = total - 1; i > 0; i--) {
         int j = rand() % (i + 1);
         char temp = cards[i];
         cards[i] = cards[j];
         cards[j] = temp;
     }
 
-    /* Copy to field */
+    // копируем на поле
     idx = 0;
     for (i = 0; i < rows; i++) {
         for (j = 0; j < cols; j++) {
             field[i][j] = cards[idx++];
-            visible[i][j] = '#'; /* Hidden */
+            visible[i][j] = '#'; // скрыта
         }
     }
 
     free(cards);
 }
 
-/* Print pairs field */
-void print_pairs_field(char** visible, int rows, int cols, int show_all, char** field) {
+// выводим поле на экран
+void print_pairs(char** visible, char** field, int rows, int cols, int show_all) {
     int i, j;
 
     printf("\n   ");
@@ -130,8 +112,8 @@ void print_pairs_field(char** visible, int rows, int cols, int show_all, char** 
     }
 }
 
-/* Check if all pairs are opened */
-int all_pairs_opened(char** visible, int rows, int cols) {
+// проверяем, все ли пары открыты
+int all_opened(char** visible, int rows, int cols) {
     int i, j;
     for (i = 0; i < rows; i++) {
         for (j = 0; j < cols; j++) {
@@ -144,41 +126,21 @@ int all_pairs_opened(char** visible, int rows, int cols) {
 }
 
 int start_find_game(Difficulty difficulty) {
-    int rows, cols;
+    int rows, cols, row1, col1, row2, col2, pairs_found = 0, total_pairs;
     char** field;
     char** visible;
-    int row1, col1, row2, col2;
-    int pairs_found = 0;
-    int total_pairs;
 
-    /* Determine field size based on difficulty */
-    switch (difficulty) {
-        case DIFF_EASY:
-            rows = 2;
-            cols = 4;
-            break;
-        case DIFF_MEDIUM:
-            rows = 4;
-            cols = 4;
-            break;
-        case DIFF_HARD:
-            rows = 4;
-            cols = 6;
-            break;
-        default:
-            rows = 4;
-            cols = 4;
-            break;
-    }
+    // размер поля зависит от сложности
+    if (difficulty == DIFF_EASY) { rows = 2; cols = 4; }
+    else if (difficulty == DIFF_MEDIUM) { rows = 4; cols = 4; }
+    else { rows = 4; cols = 6; }
 
     total_pairs = (rows * cols) / 2;
 
-    /* Allocate fields */
-    field = allocate_char_field(rows, cols);
-    visible = allocate_char_field(rows, cols);
-
-    /* Initialize field */
-    init_pairs_field(field, visible, rows, cols);
+    // создаём поля
+    field = create_field(rows, cols);
+    visible = create_field(rows, cols);
+    init_pairs(field, visible, rows, cols);
 
     clear_screen();
     printf("\n========== НАЙДИ ПАРЫ ==========\n");
@@ -186,19 +148,19 @@ int start_find_game(Difficulty difficulty) {
 
 #ifdef DEBUG
     printf("\n[DEBUG] Реальное поле:\n");
-    print_pairs_field(visible, rows, cols, 1, field);
+    print_pairs(visible, field, rows, cols, 1);
     printf("\nНажмите Enter для начала игры...");
     getchar();
 #endif
 
-    /* Game loop */
-    while (!all_pairs_opened(visible, rows, cols)) {
+    // игровой цикл
+    while (!all_opened(visible, rows, cols)) {
         clear_screen();
         printf("\n========== НАЙДИ ПАРЫ ==========\n");
         printf("Найдено пар: %d/%d\n", pairs_found, total_pairs);
-        print_pairs_field(visible, rows, cols, 0, field);
+        print_pairs(visible, field, rows, cols, 0);
 
-        /* Get first card */
+        // выбираем первую карту
         printf("\nВыберите первую карту (строка столбец): ");
         row1 = read_int_in_range(1, rows) - 1;
         col1 = read_int_in_range(1, cols) - 1;
@@ -209,7 +171,7 @@ int start_find_game(Difficulty difficulty) {
             continue;
         }
 
-        /* Get second card */
+        // выбираем вторую карту
         printf("Выберите вторую карту (строка столбец): ");
         row2 = read_int_in_range(1, rows) - 1;
         col2 = read_int_in_range(1, cols) - 1;
@@ -220,21 +182,22 @@ int start_find_game(Difficulty difficulty) {
             continue;
         }
 
-        /* Show both cards */
+        // открываем обе карты
+        visible[row1][col1] = field[row1][col1];
+        visible[row2][col2] = field[row2][col2];
+
         clear_screen();
         printf("\n========== НАЙДИ ПАРЫ ==========\n");
         printf("Найдено пар: %d/%d\n", pairs_found, total_pairs);
-        visible[row1][col1] = field[row1][col1];
-        visible[row2][col2] = field[row2][col2];
-        print_pairs_field(visible, rows, cols, 0, field);
+        print_pairs(visible, field, rows, cols, 0);
 
-        /* Check if match */
+        // проверяем совпадение
         if (field[row1][col1] == field[row2][col2]) {
             printf("\nПара найдена!\n");
             pairs_found++;
         } else {
             printf("\nНе совпадают!\n");
-            visible[row1][col1] = '#';
+            visible[row1][col1] = '#'; // закрываем обратно
             visible[row2][col2] = '#';
         }
 
@@ -242,94 +205,58 @@ int start_find_game(Difficulty difficulty) {
         getchar();
     }
 
-    /* Free memory */
-    free_char_field(field, rows);
-    free_char_field(visible, rows);
+    // освобождаем память
+    free_field(field, rows);
+    free_field(visible, rows);
 
     printf("\nВы открыли все пары!\n");
-    return 1; /* Victory */
+    return 1; // победа
 }
 
-/* ========== GAME 3: MINESWEEPER ========== */
+/* ========== GAME 3: САПЁР ========== */
 
-/* Allocate minesweeper field */
-char** allocate_field(int rows, int cols) {
-    int i;
-    char** field = (char**)malloc(rows * sizeof(char*));
-    for (i = 0; i < rows; i++) {
-        field[i] = (char*)malloc(cols * sizeof(char));
-    }
-    return field;
-}
+// инициализируем поле сапёра с бомбами и числами
+void init_minesweeper(char** field, int rows, int cols, int bombs_count) {
+    int i, j, placed = 0, di, dj;
 
-/* Free minesweeper field */
-void free_field(char** field, int rows) {
-    int i;
-    for (i = 0; i < rows; i++) {
-        free(field[i]);
-    }
-    free(field);
-}
-
-/* Initialize minesweeper field with bombs */
-void init_minesweeper_field(char** field, int rows, int cols, int bombs_count) {
-    int i, j;
-    int bombs_placed = 0;
-
-    /* Initialize empty field */
+    // заполняем нулями
     for (i = 0; i < rows; i++) {
         for (j = 0; j < cols; j++) {
             field[i][j] = '0';
         }
     }
 
-    /* Place bombs randomly */
-    while (bombs_placed < bombs_count) {
+    // размещаем бомбы
+    while (placed < bombs_count) {
         int row = rand() % rows;
         int col = rand() % cols;
-
         if (field[row][col] != '*') {
             field[row][col] = '*';
-            bombs_placed++;
+            placed++;
         }
     }
-}
 
-/* Calculate numbers around bombs */
-void calculate_numbers(char** field, int rows, int cols) {
-    int i, j, di, dj;
-    int count;
-
+    // считаем числа вокруг бомб
     for (i = 0; i < rows; i++) {
         for (j = 0; j < cols; j++) {
-            if (field[i][j] == '*') {
-                continue;
-            }
-
-            count = 0;
-            /* Check all 8 neighbors */
+            if (field[i][j] == '*') continue;
+            int count = 0;
             for (di = -1; di <= 1; di++) {
                 for (dj = -1; dj <= 1; dj++) {
                     if (di == 0 && dj == 0) continue;
-
-                    int ni = i + di;
-                    int nj = j + dj;
-
-                    if (ni >= 0 && ni < rows && nj >= 0 && nj < cols) {
-                        if (field[ni][nj] == '*') {
-                            count++;
-                        }
+                    int ni = i + di, nj = j + dj;
+                    if (ni >= 0 && ni < rows && nj >= 0 && nj < cols && field[ni][nj] == '*') {
+                        count++;
                     }
                 }
             }
-
             field[i][j] = '0' + count;
         }
     }
 }
 
-/* Print minesweeper field */
-void print_minesweeper_visible(char** visible, int rows, int cols) {
+// выводим поле сапёра
+void print_field(char** visible, int rows, int cols) {
     int i, j;
 
     printf("\n   ");
@@ -347,35 +274,35 @@ void print_minesweeper_visible(char** visible, int rows, int cols) {
     }
 }
 
-/* Open cell and recursive flood fill for zeros */
-int open_cell(char** field, char** visible, int rows, int cols, int row, int col, int* safe_opened) {
+// открываем клетку (с рекурсией для пустых)
+int open_cell(char** field, char** visible, int rows, int cols, int row, int col, int* opened) {
     if (row < 0 || row >= rows || col < 0 || col >= cols) {
         return 0;
     }
 
     if (visible[row][col] != '#' && visible[row][col] != 'F') {
-        return 0; /* Already opened */
+        return 0; // уже открыта
     }
 
     if (visible[row][col] == 'F') {
-        return 0; /* Flagged */
+        return 0; // помечена флагом
     }
 
     visible[row][col] = field[row][col];
 
     if (field[row][col] == '*') {
-        return 1; /* Hit bomb */
+        return 1; // попали на бомбу - игра проиграна
     }
 
-    (*safe_opened)++;
+    (*opened)++;
 
-    /* Flood fill for zeros */
+    // если клетка пустая (0) - открываем соседей
     if (field[row][col] == '0') {
         int di, dj;
         for (di = -1; di <= 1; di++) {
             for (dj = -1; dj <= 1; dj++) {
                 if (di == 0 && dj == 0) continue;
-                open_cell(field, visible, rows, cols, row + di, col + dj, safe_opened);
+                open_cell(field, visible, rows, cols, row + di, col + dj, opened);
             }
         }
     }
@@ -383,7 +310,7 @@ int open_cell(char** field, char** visible, int rows, int cols, int row, int col
     return 0;
 }
 
-/* Toggle flag */
+// ставим или убираем флаг
 void toggle_flag(char** visible, int row, int col) {
     if (visible[row][col] == '#') {
         visible[row][col] = 'F';
@@ -393,49 +320,26 @@ void toggle_flag(char** visible, int row, int col) {
 }
 
 int start_minesweeper_game(Difficulty difficulty) {
-    int rows, cols, bombs_count;
+    int rows, cols, bombs, i, j, row, col, safe_cells, opened = 0;
     char** field;
     char** visible;
-    int i, j;
     char action;
-    int row, col;
-    int safe_cells;
-    int safe_opened = 0;
 
-    /* Determine field parameters based on difficulty */
-    switch (difficulty) {
-        case DIFF_EASY:
-            rows = 8;
-            cols = 8;
-            bombs_count = 10;
-            break;
-        case DIFF_MEDIUM:
-            rows = 10;
-            cols = 10;
-            bombs_count = 20;
-            break;
-        case DIFF_HARD:
-            rows = 16;
-            cols = 16;
-            bombs_count = 40;
-            break;
-        default:
-            rows = 10;
-            cols = 10;
-            bombs_count = 20;
-            break;
-    }
+    // параметры поля по сложности
+    if (difficulty == DIFF_EASY) { rows = 8; cols = 8; bombs = 10; }
+    else if (difficulty == DIFF_MEDIUM) { rows = 10; cols = 10; bombs = 20; }
+    else { rows = 16; cols = 16; bombs = 40; }
 
-    safe_cells = rows * cols - bombs_count;
+    safe_cells = rows * cols - bombs;
 
-    /* Allocate fields */
-    field = allocate_field(rows, cols);
-    visible = allocate_field(rows, cols);
+    // создаём поля
+    field = create_field(rows, cols);
+    visible = create_field(rows, cols);
 
-    /* Initialize fields */
-    init_minesweeper_field(field, rows, cols, bombs_count);
-    calculate_numbers(field, rows, cols);
+    // инициализируем поле с бомбами и числами
+    init_minesweeper(field, rows, cols, bombs);
 
+    // скрываем всё поле
     for (i = 0; i < rows; i++) {
         for (j = 0; j < cols; j++) {
             visible[i][j] = '#';
@@ -444,23 +348,23 @@ int start_minesweeper_game(Difficulty difficulty) {
 
     clear_screen();
     printf("\n========== САПЁР ==========\n");
-    printf("Размер поля: %dx%d, бомб: %d\n", rows, cols, bombs_count);
+    printf("Размер: %dx%d, бомб: %d\n", rows, cols, bombs);
     printf("Команды: O - открыть, F - флаг\n");
 
 #ifdef DEBUG
-    printf("\n[DEBUG] Реальное поле:\n");
-    print_minesweeper_visible(field, rows, cols);
-    printf("\nНажмите Enter для начала игры...");
+    printf("\n[DEBUG] Реальное поле с бомбами:\n");
+    print_field(field, rows, cols);
+    printf("\nНажмите Enter для начала...");
     getchar();
 #endif
 
-    /* Game loop */
-    while (safe_opened < safe_cells) {
+    // игровой цикл
+    while (opened < safe_cells) {
         clear_screen();
         printf("\n========== САПЁР ==========\n");
-        printf("Безопасных клеток открыто: %d/%d\n", safe_opened, safe_cells);
+        printf("Безопасных открыто: %d/%d\n", opened, safe_cells);
         printf("Команды: O - открыть, F - флаг, Q - выход\n");
-        print_minesweeper_visible(visible, rows, cols);
+        print_field(visible, rows, cols);
 
         printf("\nВведите команду (O/F/Q): ");
         scanf(" %c", &action);
@@ -469,7 +373,7 @@ int start_minesweeper_game(Difficulty difficulty) {
         if (action == 'Q' || action == 'q') {
             free_field(field, rows);
             free_field(visible, rows);
-            return 0; /* Early exit */
+            return 0; // досрочный выход
         }
 
         printf("Введите координаты (строка столбец): ");
@@ -477,44 +381,44 @@ int start_minesweeper_game(Difficulty difficulty) {
         col = read_int_in_range(1, cols) - 1;
 
         if (action == 'O' || action == 'o') {
-            if (open_cell(field, visible, rows, cols, row, col, &safe_opened)) {
-                /* Hit bomb */
+            if (open_cell(field, visible, rows, cols, row, col, &opened)) {
+                // попали на бомбу
                 clear_screen();
                 printf("\n========== САПЁР ==========\n");
                 printf("ВЗРЫВ! Вы попали на бомбу!\n");
-                print_minesweeper_visible(field, rows, cols);
+                print_field(field, rows, cols);
                 free_field(field, rows);
                 free_field(visible, rows);
-                return 0; /* Defeat */
+                return 0; // поражение
             }
         } else if (action == 'F' || action == 'f') {
             toggle_flag(visible, row, col);
         }
     }
 
-    /* Victory */
+    // победа - все безопасные клетки открыты
     clear_screen();
     printf("\n========== САПЁР ==========\n");
-    printf("ПОБЕДА! Вы открыли все безопасные клетки!\n");
-    print_minesweeper_visible(visible, rows, cols);
+    printf("ПОБЕДА! Все безопасные клетки открыты!\n");
+    print_field(visible, rows, cols);
 
     free_field(field, rows);
     free_field(visible, rows);
-    return 1;
+    return 1; // победа
 }
 
-/* ========== GAME 4: TIC-TAC-TOE ========== */
+/* ========== GAME 4: КРЕСТИКИ-НОЛИКИ ========== */
 
-/* Initialize tic-tac-toe field */
-void init_tictactoe_field(char* field) {
+// инициализация поля цифрами 1-9
+void init_tictactoe(char* field) {
     int i;
     for (i = 0; i < 9; i++) {
-        field[i] = '1' + i; /* Numbers 1-9 */
+        field[i] = '1' + i;
     }
 }
 
-/* Print tic-tac-toe field */
-void print_tictactoe_field(char* field) {
+// выводим поле 3x3
+void print_tictactoe(char* field) {
     printf("\n");
     printf(" %c | %c | %c \n", field[0], field[1], field[2]);
     printf("---|---|---\n");
@@ -524,27 +428,27 @@ void print_tictactoe_field(char* field) {
     printf("\n");
 }
 
-/* Check if someone won */
-int check_tictactoe_win(char* field, char symbol) {
-    /* Check rows */
+// проверка победы
+int check_win(char* field, char symbol) {
+    // проверяем строки
     if (field[0] == symbol && field[1] == symbol && field[2] == symbol) return 1;
     if (field[3] == symbol && field[4] == symbol && field[5] == symbol) return 1;
     if (field[6] == symbol && field[7] == symbol && field[8] == symbol) return 1;
 
-    /* Check columns */
+    // проверяем столбцы
     if (field[0] == symbol && field[3] == symbol && field[6] == symbol) return 1;
     if (field[1] == symbol && field[4] == symbol && field[7] == symbol) return 1;
     if (field[2] == symbol && field[5] == symbol && field[8] == symbol) return 1;
 
-    /* Check diagonals */
+    // проверяем диагонали
     if (field[0] == symbol && field[4] == symbol && field[8] == symbol) return 1;
     if (field[2] == symbol && field[4] == symbol && field[6] == symbol) return 1;
 
     return 0;
 }
 
-/* Check if field is full */
-int is_field_full(char* field) {
+// проверка на ничью (поле заполнено)
+int check_draw(char* field) {
     int i;
     for (i = 0; i < 9; i++) {
         if (field[i] != 'X' && field[i] != 'O') {
@@ -554,239 +458,162 @@ int is_field_full(char* field) {
     return 1;
 }
 
-/* Player move */
-int player_move(char* field, char player_symbol) {
+// ход игрока
+void player_turn(char* field, char symbol) {
     int pos;
 
     while (1) {
-        printf("Ваш ход (выберите позицию 1-9): ");
+        printf("Ваш ход (1-9): ");
         pos = read_int_in_range(1, 9) - 1;
 
         if (field[pos] != 'X' && field[pos] != 'O') {
-            field[pos] = player_symbol;
-            return 1;
+            field[pos] = symbol;
+            return;
         }
 
-        printf("Эта позиция уже занята!\n");
+        printf("Место занято!\n");
     }
 }
 
-/* Computer move with difficulty-based strategy */
-int computer_move(char* field, char computer_symbol, char opponent_symbol, Difficulty difficulty) {
+// ход компьютера с учётом сложности
+void computer_turn(char* field, char comp, char opp, Difficulty difficulty) {
     int i;
-    int move = -1;
 
-    /* HARD: Check for winning move first */
+    // HARD: пытаемся выиграть
     if (difficulty == DIFF_HARD) {
         for (i = 0; i < 9; i++) {
             if (field[i] != 'X' && field[i] != 'O') {
                 char temp = field[i];
-                field[i] = computer_symbol;
-                if (check_tictactoe_win(field, computer_symbol)) {
-                    return 1; /* Winning move made */
+                field[i] = comp;
+                if (check_win(field, comp)) {
+                    return; // нашли победный ход
                 }
                 field[i] = temp;
             }
         }
     }
 
-    /* HARD and MEDIUM: Check for blocking opponent's winning move */
+    // HARD и MEDIUM: блокируем противника
     if (difficulty == DIFF_HARD || difficulty == DIFF_MEDIUM) {
         for (i = 0; i < 9; i++) {
             if (field[i] != 'X' && field[i] != 'O') {
                 char temp = field[i];
-                field[i] = opponent_symbol;
-                if (check_tictactoe_win(field, opponent_symbol)) {
-                    field[i] = computer_symbol; /* Block */
-                    return 1;
+                field[i] = opp;
+                if (check_win(field, opp)) {
+                    field[i] = comp; // блокируем
+                    return;
                 }
                 field[i] = temp;
             }
         }
     }
 
-    /* HARD: Try to take center */
+    // HARD: занимаем центр
     if (difficulty == DIFF_HARD && field[4] != 'X' && field[4] != 'O') {
-        field[4] = computer_symbol;
-        return 1;
+        field[4] = comp;
+        return;
     }
 
-    /* MEDIUM: 50% chance to make random move */
-    if (difficulty == DIFF_MEDIUM && (rand() % 2 == 0)) {
-        /* Random move */
-        while (1) {
-            move = rand() % 9;
-            if (field[move] != 'X' && field[move] != 'O') {
-                field[move] = computer_symbol;
-                return 1;
-            }
-        }
-    }
-
-    /* EASY or fallback: Random move */
+    // EASY или случайный ход
     while (1) {
-        move = rand() % 9;
-        if (field[move] != 'X' && field[move] != 'O') {
-            field[move] = computer_symbol;
-            return 1;
+        int pos = rand() % 9;
+        if (field[pos] != 'X' && field[pos] != 'O') {
+            field[pos] = comp;
+            return;
         }
     }
-
-    return 0;
 }
 
-/* Coin toss for first player */
-int toss_coin_for_first_player(void) {
-    return rand() % 2; /* 0 - player, 1 - computer */
+// бросок монеты - кто ходит первым
+int coin_toss(void) {
+    return rand() % 2; // 0 - игрок, 1 - компьютер
 }
 
 int start_tictactoe_game(Difficulty difficulty) {
-    char field[9];
-    int first_player;
-    char player_symbol;
-    char computer_symbol;
-    int current_player;
+    char field[9], player, computer;
+    int first, current;
 
-    init_tictactoe_field(field);
+    init_tictactoe(field);
+    first = coin_toss();
 
-    /* Coin toss */
-    first_player = toss_coin_for_first_player();
-
-    if (first_player == 0) {
-        player_symbol = 'X';
-        computer_symbol = 'O';
-        current_player = 0; /* Player starts */
+    if (first == 0) {
+        player = 'X'; computer = 'O'; current = 0;
         printf("\nБросок монеты: Вы ходите первым (X)!\n");
     } else {
-        player_symbol = 'O';
-        computer_symbol = 'X';
-        current_player = 1; /* Computer starts */
+        player = 'O'; computer = 'X'; current = 1;
         printf("\nБросок монеты: Компьютер ходит первым (X)!\n");
     }
 
-    printf("Нажмите Enter для начала...");
+    printf("Нажмите Enter...");
     getchar();
 
-    /* Game loop */
+    // игровой цикл
     while (1) {
         clear_screen();
         printf("\n========== КРЕСТИКИ-НОЛИКИ ==========\n");
-        printf("Вы: %c, Компьютер: %c\n", player_symbol, computer_symbol);
-        print_tictactoe_field(field);
+        printf("Вы: %c, Компьютер: %c\n", player, computer);
+        print_tictactoe(field);
 
-        if (current_player == 0) {
-            /* Player's turn */
-            player_move(field, player_symbol);
+        if (current == 0) {
+            // ход игрока
+            player_turn(field, player);
 
-            if (check_tictactoe_win(field, player_symbol)) {
+            if (check_win(field, player)) {
                 clear_screen();
                 printf("\n========== КРЕСТИКИ-НОЛИКИ ==========\n");
-                print_tictactoe_field(field);
-                printf("Поздравляем! Вы выиграли!\n");
-                return 1; /* Player victory */
+                print_tictactoe(field);
+                printf("Вы выиграли!\n");
+                return 1; // победа игрока
             }
 
-            current_player = 1;
+            current = 1;
         } else {
-            /* Computer's turn */
+            // ход компьютера
             printf("Ход компьютера...\n");
-            computer_move(field, computer_symbol, player_symbol, difficulty);
+            computer_turn(field, computer, player, difficulty);
 
-            if (check_tictactoe_win(field, computer_symbol)) {
+            if (check_win(field, computer)) {
                 clear_screen();
                 printf("\n========== КРЕСТИКИ-НОЛИКИ ==========\n");
-                print_tictactoe_field(field);
+                print_tictactoe(field);
                 printf("Компьютер выиграл!\n");
-                return 0; /* Computer victory */
+                return 0; // победа компьютера
             }
 
-            current_player = 0;
+            current = 0;
         }
 
-        /* Check for draw */
-        if (is_field_full(field)) {
+        // проверка на ничью
+        if (check_draw(field)) {
             clear_screen();
             printf("\n========== КРЕСТИКИ-НОЛИКИ ==========\n");
-            print_tictactoe_field(field);
+            print_tictactoe(field);
             printf("Ничья!\n");
-            return 2; /* Draw */
+            return 2; // ничья
         }
     }
 }
 
-/* ========== GAME 5: TETRIS ========== */
+/* ========== GAME 5: ТЕТРИС ========== */
 
-/* Tetromino shapes (4 rotations each) */
-const int TETROMINOS[7][4][4][4] = {
-    /* I */
-    {
-        {{0,0,0,0}, {1,1,1,1}, {0,0,0,0}, {0,0,0,0}},
-        {{0,1,0,0}, {0,1,0,0}, {0,1,0,0}, {0,1,0,0}},
-        {{0,0,0,0}, {1,1,1,1}, {0,0,0,0}, {0,0,0,0}},
-        {{0,1,0,0}, {0,1,0,0}, {0,1,0,0}, {0,1,0,0}}
-    },
-    /* O */
-    {
-        {{1,1,0,0}, {1,1,0,0}, {0,0,0,0}, {0,0,0,0}},
-        {{1,1,0,0}, {1,1,0,0}, {0,0,0,0}, {0,0,0,0}},
-        {{1,1,0,0}, {1,1,0,0}, {0,0,0,0}, {0,0,0,0}},
-        {{1,1,0,0}, {1,1,0,0}, {0,0,0,0}, {0,0,0,0}}
-    },
-    /* T */
-    {
-        {{0,1,0,0}, {1,1,1,0}, {0,0,0,0}, {0,0,0,0}},
-        {{0,1,0,0}, {0,1,1,0}, {0,1,0,0}, {0,0,0,0}},
-        {{0,0,0,0}, {1,1,1,0}, {0,1,0,0}, {0,0,0,0}},
-        {{0,1,0,0}, {1,1,0,0}, {0,1,0,0}, {0,0,0,0}}
-    },
-    /* S */
-    {
-        {{0,1,1,0}, {1,1,0,0}, {0,0,0,0}, {0,0,0,0}},
-        {{0,1,0,0}, {0,1,1,0}, {0,0,1,0}, {0,0,0,0}},
-        {{0,1,1,0}, {1,1,0,0}, {0,0,0,0}, {0,0,0,0}},
-        {{0,1,0,0}, {0,1,1,0}, {0,0,1,0}, {0,0,0,0}}
-    },
-    /* Z */
-    {
-        {{1,1,0,0}, {0,1,1,0}, {0,0,0,0}, {0,0,0,0}},
-        {{0,0,1,0}, {0,1,1,0}, {0,1,0,0}, {0,0,0,0}},
-        {{1,1,0,0}, {0,1,1,0}, {0,0,0,0}, {0,0,0,0}},
-        {{0,0,1,0}, {0,1,1,0}, {0,1,0,0}, {0,0,0,0}}
-    },
-    /* J */
-    {
-        {{1,0,0,0}, {1,1,1,0}, {0,0,0,0}, {0,0,0,0}},
-        {{0,1,1,0}, {0,1,0,0}, {0,1,0,0}, {0,0,0,0}},
-        {{0,0,0,0}, {1,1,1,0}, {0,0,1,0}, {0,0,0,0}},
-        {{0,1,0,0}, {0,1,0,0}, {1,1,0,0}, {0,0,0,0}}
-    },
-    /* L */
-    {
-        {{0,0,1,0}, {1,1,1,0}, {0,0,0,0}, {0,0,0,0}},
-        {{0,1,0,0}, {0,1,0,0}, {0,1,1,0}, {0,0,0,0}},
-        {{0,0,0,0}, {1,1,1,0}, {1,0,0,0}, {0,0,0,0}},
-        {{1,1,0,0}, {0,1,0,0}, {0,1,0,0}, {0,0,0,0}}
-    }
+// координаты блоков фигур (относительные)
+// 7 классических фигур тетриса: I, O, T, L, J, S, Z
+static const int SHAPES[7][4][2] = {
+    {{0,0}, {0,1}, {0,2}, {0,3}},   // I - палка
+    {{0,0}, {0,1}, {1,0}, {1,1}},   // O - квадрат
+    {{0,1}, {1,0}, {1,1}, {1,2}},   // T - тэшка
+    {{0,0}, {1,0}, {1,1}, {1,2}},   // L
+    {{0,2}, {1,0}, {1,1}, {1,2}},   // J
+    {{0,1}, {0,2}, {1,0}, {1,1}},   // S
+    {{0,0}, {0,1}, {1,1}, {1,2}}    // Z
 };
 
-/* Initialize tetris field */
-void init_tetris_field(char** field, int rows, int cols) {
+// выводим поле тетриса
+void print_tetris(char** field, int rows, int cols) {
     int i, j;
-    for (i = 0; i < rows; i++) {
-        for (j = 0; j < cols; j++) {
-            field[i][j] = '.';
-        }
-    }
-}
-
-/* Print tetris field */
-void print_tetris_field(char** field, int rows, int cols) {
-    int i, j;
-
     printf("\n+");
     for (j = 0; j < cols; j++) printf("-");
     printf("+\n");
-
     for (i = 0; i < rows; i++) {
         printf("|");
         for (j = 0; j < cols; j++) {
@@ -794,51 +621,51 @@ void print_tetris_field(char** field, int rows, int cols) {
         }
         printf("|\n");
     }
-
     printf("+");
     for (j = 0; j < cols; j++) printf("-");
     printf("+\n");
 }
 
-/* Check if tetromino can be placed */
-int can_place_tetromino(char** field, int rows, int cols, int shape, int rotation, int pos_row, int pos_col) {
-    int i, j;
+// проверяем, можно ли разместить фигуру
+int can_place(char** field, int rows, int cols, int shape[4][2], int row, int col) {
+    int i;
     for (i = 0; i < 4; i++) {
-        for (j = 0; j < 4; j++) {
-            if (TETROMINOS[shape][rotation][i][j]) {
-                int field_row = pos_row + i;
-                int field_col = pos_col + j;
-
-                if (field_row < 0 || field_row >= rows || field_col < 0 || field_col >= cols) {
-                    return 0;
-                }
-
-                if (field[field_row][field_col] != '.') {
-                    return 0;
-                }
-            }
+        int r = row + shape[i][0];
+        int c = col + shape[i][1];
+        if (r < 0 || r >= rows || c < 0 || c >= cols || field[r][c] != '.') {
+            return 0;
         }
     }
     return 1;
 }
 
-/* Place tetromino on field */
-void place_tetromino(char** field, int shape, int rotation, int pos_row, int pos_col, char symbol) {
-    int i, j;
+// поворот фигуры на 90 градусов по часовой (кроме квадрата)
+void rotate_shape(int shape[4][2], int shape_type) {
+    int i, temp;
+    if (shape_type == 1) return; // квадрат не крутится
+
+    // поворот: (r, c) -> (c, -r) относительно центра
     for (i = 0; i < 4; i++) {
-        for (j = 0; j < 4; j++) {
-            if (TETROMINOS[shape][rotation][i][j]) {
-                field[pos_row + i][pos_col + j] = symbol;
-            }
-        }
+        temp = shape[i][0];
+        shape[i][0] = shape[i][1];
+        shape[i][1] = -temp;
+    }
+
+    // нормализация - сдвигаем к 0
+    int min_r = shape[0][0], min_c = shape[0][1];
+    for (i = 1; i < 4; i++) {
+        if (shape[i][0] < min_r) min_r = shape[i][0];
+        if (shape[i][1] < min_c) min_c = shape[i][1];
+    }
+    for (i = 0; i < 4; i++) {
+        shape[i][0] -= min_r;
+        shape[i][1] -= min_c;
     }
 }
 
-/* Remove full lines and return count */
-int remove_full_lines(char** field, int rows, int cols) {
-    int i, j, k;
-    int lines_cleared = 0;
-
+// удаляем заполненные линии и возвращаем количество
+int remove_lines(char** field, int rows, int cols) {
+    int i, j, k, cleared = 0;
     for (i = rows - 1; i >= 0; i--) {
         int full = 1;
         for (j = 0; j < cols; j++) {
@@ -847,144 +674,136 @@ int remove_full_lines(char** field, int rows, int cols) {
                 break;
             }
         }
-
         if (full) {
-            lines_cleared++;
-            /* Move all rows down */
+            cleared++;
             for (k = i; k > 0; k--) {
                 for (j = 0; j < cols; j++) {
                     field[k][j] = field[k - 1][j];
                 }
             }
-            /* Clear top row */
             for (j = 0; j < cols; j++) {
                 field[0][j] = '.';
             }
-            i++; /* Check same row again */
+            i++;
         }
     }
-
-    return lines_cleared;
+    return cleared;
 }
 
 int start_tetris_game(Difficulty difficulty) {
-    const int FIELD_ROWS = 20;
-    const int FIELD_COLS = 10;
-    int lines_to_clear;
-    int lines_cleared = 0;
+    int rows = 16, cols = 10;
+    int goal, cleared = 0;
     char** field;
-    int current_shape;
-    int current_rotation;
-    int current_row;
-    int current_col;
     char input;
-    int game_over = 0;
+    int i, j;
 
-    /* Determine goal based on difficulty */
-    switch (difficulty) {
-        case DIFF_EASY:
-            lines_to_clear = 5;
-            break;
-        case DIFF_MEDIUM:
-            lines_to_clear = 10;
-            break;
-        case DIFF_HARD:
-            lines_to_clear = 15;
-            break;
-        default:
-            lines_to_clear = 10;
-            break;
+    // цель по сложности
+    goal = (difficulty == DIFF_EASY) ? 5 : (difficulty == DIFF_MEDIUM) ? 10 : 15;
+
+    // создаём пустое поле
+    field = create_field(rows, cols);
+    for (i = 0; i < rows; i++) {
+        for (j = 0; j < cols; j++) {
+            field[i][j] = '.';
+        }
     }
 
-    /* Allocate field */
-    field = allocate_field(FIELD_ROWS, FIELD_COLS);
-    init_tetris_field(field, FIELD_ROWS, FIELD_COLS);
-
     printf("\n========== ТЕТРИС ==========\n");
-    printf("Цель: Собрать %d линий\n", lines_to_clear);
-    printf("Управление: A - влево, D - вправо, W - поворот, S - падение, Q - выход\n");
-    printf("Нажмите Enter для начала...");
+    printf("Цель: собрать %d линий\n", goal);
+    printf("Управление: A - влево, D - вправо, S - вниз, W - поворот, Q - выход\n");
+    printf("Нажмите Enter...");
     getchar();
 
-    /* Game loop */
-    while (lines_cleared < lines_to_clear && !game_over) {
-        /* Spawn new tetromino */
-        current_shape = rand() % 7;
-        current_rotation = 0;
-        current_row = 0;
-        current_col = FIELD_COLS / 2 - 2;
-
-        /* Check if can spawn */
-        if (!can_place_tetromino(field, FIELD_ROWS, FIELD_COLS, current_shape, current_rotation, current_row, current_col)) {
-            game_over = 1;
-            break;
+    // игровой цикл
+    while (cleared < goal) {
+        // выбираем случайную фигуру
+        int shape_type = rand() % 7;
+        int shape[4][2];
+        for (i = 0; i < 4; i++) {
+            shape[i][0] = SHAPES[shape_type][i][0];
+            shape[i][1] = SHAPES[shape_type][i][1];
         }
 
-        /* Tetromino fall loop */
+        int row = 0, col = cols / 2 - 2;
+
+        // проверяем, можно ли разместить
+        if (!can_place(field, rows, cols, shape, row, col)) {
+            break; // игра окончена
+        }
+
+        // фигура падает
         while (1) {
             clear_screen();
             printf("\n========== ТЕТРИС ==========\n");
-            printf("Линий собрано: %d/%d\n", lines_cleared, lines_to_clear);
+            printf("Линий: %d/%d\n", cleared, goal);
 
-            /* Draw field with current tetromino */
-            place_tetromino(field, current_shape, current_rotation, current_row, current_col, '#');
-            print_tetris_field(field, FIELD_ROWS, FIELD_COLS);
-            place_tetromino(field, current_shape, current_rotation, current_row, current_col, '.');
+            // рисуем фигуру на поле
+            for (i = 0; i < 4; i++) {
+                field[row + shape[i][0]][col + shape[i][1]] = '#';
+            }
+            print_tetris(field, rows, cols);
+            // убираем фигуру с поля
+            for (i = 0; i < 4; i++) {
+                field[row + shape[i][0]][col + shape[i][1]] = '.';
+            }
 
-            printf("\nУправление: A/D - влево/вправо, W - поворот, S - вниз, Q - выход\n");
-            printf("Команда: ");
-
+            printf("\nКоманда (A-влево, D-вправо, S-вниз, W-поворот, Q-выход): ");
             scanf(" %c", &input);
             while (getchar() != '\n');
 
             if (input == 'Q' || input == 'q') {
-                free_field(field, FIELD_ROWS);
+                free_field(field, rows);
                 return 0;
             }
 
-            /* Handle input */
-            if (input == 'A' || input == 'a') {
-                if (can_place_tetromino(field, FIELD_ROWS, FIELD_COLS, current_shape, current_rotation, current_row, current_col - 1)) {
-                    current_col--;
+            // движение влево
+            if ((input == 'A' || input == 'a') && can_place(field, rows, cols, shape, row, col - 1)) {
+                col--;
+            }
+            // движение вправо
+            else if ((input == 'D' || input == 'd') && can_place(field, rows, cols, shape, row, col + 1)) {
+                col++;
+            }
+            // поворот
+            else if (input == 'W' || input == 'w') {
+                int temp_shape[4][2];
+                for (i = 0; i < 4; i++) {
+                    temp_shape[i][0] = shape[i][0];
+                    temp_shape[i][1] = shape[i][1];
                 }
-            } else if (input == 'D' || input == 'd') {
-                if (can_place_tetromino(field, FIELD_ROWS, FIELD_COLS, current_shape, current_rotation, current_row, current_col + 1)) {
-                    current_col++;
-                }
-            } else if (input == 'W' || input == 'w') {
-                int new_rotation = (current_rotation + 1) % 4;
-                if (can_place_tetromino(field, FIELD_ROWS, FIELD_COLS, current_shape, new_rotation, current_row, current_col)) {
-                    current_rotation = new_rotation;
+                rotate_shape(temp_shape, shape_type);
+                if (can_place(field, rows, cols, temp_shape, row, col)) {
+                    for (i = 0; i < 4; i++) {
+                        shape[i][0] = temp_shape[i][0];
+                        shape[i][1] = temp_shape[i][1];
+                    }
                 }
             }
 
-            /* Try to move down */
-            if (can_place_tetromino(field, FIELD_ROWS, FIELD_COLS, current_shape, current_rotation, current_row + 1, current_col)) {
-                current_row++;
+            // автоматическое падение или ручное ускорение
+            if (can_place(field, rows, cols, shape, row + 1, col)) {
+                row++;
             } else {
-                /* Lock tetromino */
-                place_tetromino(field, current_shape, current_rotation, current_row, current_col, '#');
-
-                /* Clear lines */
-                int cleared = remove_full_lines(field, FIELD_ROWS, FIELD_COLS);
-                lines_cleared += cleared;
-
-                break; /* Spawn new tetromino */
+                // фиксируем фигуру
+                for (i = 0; i < 4; i++) {
+                    field[row + shape[i][0]][col + shape[i][1]] = '#';
+                }
+                cleared += remove_lines(field, rows, cols);
+                break;
             }
         }
     }
 
     clear_screen();
     printf("\n========== ТЕТРИС ==========\n");
-    print_tetris_field(field, FIELD_ROWS, FIELD_COLS);
+    print_tetris(field, rows, cols);
+    free_field(field, rows);
 
-    free_field(field, FIELD_ROWS);
-
-    if (lines_cleared >= lines_to_clear) {
-        printf("\nПОБЕДА! Вы собрали %d линий!\n", lines_cleared);
+    if (cleared >= goal) {
+        printf("\nПОБЕДА! Собрано %d линий!\n", cleared);
         return 1;
     } else {
-        printf("\nИГРА ОКОНЧЕНА! Собрано линий: %d/%d\n", lines_cleared, lines_to_clear);
+        printf("\nИГРА ОКОНЧЕНА! Собрано: %d/%d\n", cleared, goal);
         return 0;
     }
 }
