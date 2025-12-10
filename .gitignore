@@ -9,9 +9,18 @@
 *.a
 *.lib
 
+# Main executable
+game_menu
+
+# Temp files
+nul
+
 # Build logs
 build.log
 *.log
+
+# Experiment binaries
+experiments/test_utf8_output
 
 # IDE and editor files
 .vscode/
